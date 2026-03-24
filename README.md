@@ -1,5 +1,6 @@
 CokeEngine
-Autor: Ángel Teráb
+Autor: Ángel Terán
+
 Materia: Arquitectura de Motores Gráficos
 
 Descripción
