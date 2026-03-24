@@ -1,5 +1,6 @@
 #pragma once
-// Librerias STD
+
+// Librerías estándar usadas en varias partes del motor
 #include <string>
 #include <sstream>
 #include <vector>
@@ -7,7 +8,7 @@
 #include <xnamath.h>
 #include <thread>
 
-// Librerias DirectX
+// Librerías principales de DirectX 11
 #include <d3d11.h>
 #include <d3dx11.h>
 #include <d3dcompiler.h>
@@ -16,60 +17,82 @@
 
 // Third Party Libraries
 
+//--------------------------------------------------------------------------------------
 // MACROS
-#define SAFE_RELEASE(x) if(x != nullptr) x->Release(); x = nullptr;
+//--------------------------------------------------------------------------------------
 
-#define MESSAGE( classObj, method, state )   \
-{                                            \
-   std::wostringstream os_;                  \
-   os_ << classObj << "::" << method << " : " << "[CREATION OF RESOURCE " << ": " << state << "] \n"; \
-   OutputDebugStringW( os_.str().c_str() );  \
+// Libera recursos COM de forma segura y evita errores en if/else
+#define SAFE_RELEASE(x)        \
+do {                           \
+    if ((x) != nullptr) {      \
+        (x)->Release();        \
+        (x) = nullptr;         \
+    }                          \
+} while (0)
+
+// Mensaje simple para depuración al crear recursos
+#define MESSAGE(classObj, method, state)                                      \
+{                                                                             \
+    std::wostringstream os_;                                                  \
+    os_ << classObj << L"::" << method                                        \
+        << L" : " << L"[CREATION OF RESOURCE: " << state << L"]\n";           \
+    OutputDebugStringW(os_.str().c_str());                                    \
 }
 
-#define ERROR(classObj, method, errorMSG)                     \
-{                                                             \
-    try {                                                     \
-        std::wostringstream os_;                              \
-        os_ << L"ERROR : " << classObj << L"::" << method     \
-            << L" : " << errorMSG << L"\n";                   \
-        OutputDebugStringW(os_.str().c_str());                \
-    } catch (...) {                                           \
-        OutputDebugStringW(L"Failed to log error message.\n");\
-    }                                                         \
+// Mensaje de error para ver problemas en la ventana Output
+#define ERROR(classObj, method, errorMSG)                                     \
+{                                                                             \
+    try {                                                                     \
+        std::wostringstream os_;                                              \
+        os_ << L"ERROR : " << classObj << L"::" << method                     \
+            << L" : " << errorMSG << L"\n";                                   \
+        OutputDebugStringW(os_.str().c_str());                                \
+    } catch (...) {                                                           \
+        OutputDebugStringW(L"Failed to log error message.\n");                \
+    }                                                                         \
 }
 
 //--------------------------------------------------------------------------------------
 // Structures
 //--------------------------------------------------------------------------------------
+
+// Vértice básico con posición y coordenadas de textura
 struct SimpleVertex
 {
-  XMFLOAT3 Pos;
-  XMFLOAT2 Tex;
+    XMFLOAT3 Pos;
+    XMFLOAT2 Tex;
 };
 
+// Constant buffer para datos que casi no cambian
 struct CBNeverChanges
 {
-  XMMATRIX mView;
+    XMMATRIX mView;
 };
 
+// Constant buffer para actualización por cambio de ventana
 struct CBChangeOnResize
 {
-  XMMATRIX mProjection;
+    XMMATRIX mProjection;
 };
 
+// Constant buffer para datos que cambian cada frame
 struct CBChangesEveryFrame
 {
-  XMMATRIX mWorld;
-  XMFLOAT4 vMeshColor;
+    XMMATRIX mWorld;
+    XMFLOAT4 vMeshColor;
 };
 
-enum ExtensionType {
-  DDS = 0,
-  PNG = 1,
-  JPG = 2
+// Tipos de extensión soportados para texturas
+enum ExtensionType
+{
+    DDS = 0,
+    PNG = 1,
+    JPG = 2
 };
 
-enum ShaderType {
-  VERTEX_SHADER = 0,
-  PIXEL_SHADER = 1
+// Tipos de shader usados por el motor
+enum ShaderType
+{
+    VERTEX_SHADER = 0,
+    PIXEL_SHADER = 1
 };
