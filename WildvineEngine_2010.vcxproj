@@ -161,7 +161,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <AdditionalIncludeDirectories>./include/;DXUT\Core;DXUT\Optional;./include/fbx/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include/;DXUT\Core;DXUT\Optional;./include/fbx/;./Imgui/imgui-docking-znly-docking/backends/;./Imgui/imgui-docking-znly-docking/;./Imgui/ImGuizmo/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions> %(AdditionalOptions)</AdditionalOptions>
       <PreprocessorDefinitions>WIN32;FBXSDK_SHARED;_DEBUG;DEBUG;PROFILE;_WINDOWS;D3DXFX_LARGEADDRESS_HANDLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
@@ -205,7 +205,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FloatingPointModel>Fast</FloatingPointModel>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <AdditionalIncludeDirectories>./include/;DXUT\Core;DXUT\Optional;./include/fbx/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include/;DXUT\Core;DXUT\Optional;./include/fbx/;./Imgui/imgui-docking-znly-docking/backends/;./Imgui/imgui-docking-znly-docking/;./Imgui/ImGuizmo/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions> %(AdditionalOptions)</AdditionalOptions>
       <PreprocessorDefinitions>WIN32;FBXSDK_SHARED;_DEBUG;DEBUG;PROFILE;_WINDOWS;D3DXFX_LARGEADDRESS_HANDLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -250,7 +250,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <AdditionalIncludeDirectories>./include/;DXUT\Core;DXUT\Optional;./include/fbx/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include/;DXUT\Core;DXUT\Optional;./include/fbx/;./Imgui/imgui-docking-znly-docking/backends/;./Imgui/imgui-docking-znly-docking/;./Imgui/ImGuizmo/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions> %(AdditionalOptions)</AdditionalOptions>
       <PreprocessorDefinitions>WIN32;FBXSDK_SHARED;NDEBUG;_WINDOWS;D3DXFX_LARGEADDRESS_HANDLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -295,7 +295,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FloatingPointModel>Fast</FloatingPointModel>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <AdditionalIncludeDirectories>./include/;DXUT\Core;DXUT\Optional;./include/fbx/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include/;DXUT\Core;DXUT\Optional;./include/fbx/;./Imgui/imgui-docking-znly-docking/backends/;./Imgui/imgui-docking-znly-docking/;./Imgui/ImGuizmo/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions> %(AdditionalOptions)</AdditionalOptions>
       <PreprocessorDefinitions>WIN32;FBXSDK_SHARED;NDEBUG;_WINDOWS;D3DXFX_LARGEADDRESS_HANDLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -341,7 +341,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <AdditionalIncludeDirectories>./include/;DXUT\Core;DXUT\Optional;./include/fbx/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include/;DXUT\Core;DXUT\Optional;./include/fbx/;./Imgui/imgui-docking-znly-docking/backends/;./Imgui/imgui-docking-znly-docking/;./Imgui/ImGuizmo/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions> %(AdditionalOptions)</AdditionalOptions>
       <PreprocessorDefinitions>WIN32;FBXSDK_SHARED;NDEBUG;PROFILE;_WINDOWS;D3DXFX_LARGEADDRESS_HANDLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -386,7 +386,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FloatingPointModel>Fast</FloatingPointModel>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <AdditionalIncludeDirectories>./include/;DXUT\Core;DXUT\Optional;./include/fbx/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include/;DXUT\Core;DXUT\Optional;./include/fbx/;./Imgui/imgui-docking-znly-docking/backends/;./Imgui/imgui-docking-znly-docking/;./Imgui/ImGuizmo/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions> %(AdditionalOptions)</AdditionalOptions>
       <PreprocessorDefinitions>WIN32;FBXSDK_SHARED;NDEBUG;PROFILE;_WINDOWS;D3DXFX_LARGEADDRESS_HANDLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -421,19 +421,38 @@
       </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemGroup />
   <ItemGroup>
+    <None Include="bin\Skybox.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Imgui\imgui-docking-znly-docking\backends\imgui_impl_dx11.cpp" />
+    <ClCompile Include="Imgui\imgui-docking-znly-docking\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="Imgui\imgui-docking-znly-docking\imgui.cpp" />
+    <ClCompile Include="Imgui\imgui-docking-znly-docking\imgui_demo.cpp" />
+    <ClCompile Include="Imgui\imgui-docking-znly-docking\imgui_draw.cpp" />
+    <ClCompile Include="Imgui\imgui-docking-znly-docking\imgui_tables.cpp" />
+    <ClCompile Include="Imgui\imgui-docking-znly-docking\imgui_widgets.cpp" />
+    <ClCompile Include="Imgui\ImGuizmo\ImGuizmo.cpp" />
     <ClCompile Include="source\BaseApp.cpp" />
     <ClCompile Include="source\Buffer.cpp" />
+    <ClCompile Include="source\Camera.cpp" />
+    <ClCompile Include="source\DepthStencilState.cpp" />
     <ClCompile Include="source\DepthStencilView.cpp" />
     <ClCompile Include="source\Device.cpp" />
     <ClCompile Include="source\DeviceContext.cpp" />
     <ClCompile Include="source\ECS\Actor.cpp" />
+    <ClCompile Include="source\EditorViewportPass.cpp" />
+    <ClCompile Include="source\GUI\GUI.cpp" />
     <ClCompile Include="source\InputLayout.cpp" />
     <ClCompile Include="source\Model3D.cpp" />
+    <ClCompile Include="source\RasterizerState.cpp" />
     <ClCompile Include="source\RenderTargetView.cpp" />
     <ClCompile Include="source\SamplerState.cpp" />
+    <ClCompile Include="source\SceneGraph\SceneGraph.cpp" />
     <ClCompile Include="source\ShaderProgram.cpp" />
+    <ClCompile Include="source\Skybox.cpp" />
     <ClCompile Include="source\SwapChain.cpp" />
     <ClCompile Include="source\Texture.cpp" />
     <ClCompile Include="source\Viewport.cpp" />
@@ -444,8 +463,18 @@
     <None Include="WildvineEngine.fx" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Imgui\imgui-docking-znly-docking\backends\imgui_impl_dx11.h" />
+    <ClInclude Include="Imgui\imgui-docking-znly-docking\backends\imgui_impl_win32.h" />
+    <ClInclude Include="Imgui\imgui-docking-znly-docking\imconfig.h" />
+    <ClInclude Include="Imgui\imgui-docking-znly-docking\imgui.h" />
+    <ClInclude Include="Imgui\imgui-docking-znly-docking\imgui_internal.h" />
+    <ClInclude Include="Imgui\imgui-docking-znly-docking\imstb_rectpack.h" />
+    <ClInclude Include="Imgui\imgui-docking-znly-docking\imstb_textedit.h" />
+    <ClInclude Include="Imgui\imgui-docking-znly-docking\imstb_truetype.h" />
+    <ClInclude Include="Imgui\ImGuizmo\ImGuizmo.h" />
     <ClInclude Include="include\BaseApp.h" />
     <ClInclude Include="include\Buffer.h" />
+    <ClInclude Include="include\DepthStencilState.h" />
     <ClInclude Include="include\DepthStencilView.h" />
     <ClInclude Include="include\Device.h" />
     <ClInclude Include="include\DeviceContext.h" />
@@ -453,11 +482,16 @@
     <ClInclude Include="include\ECS\Component.h" />
     <ClInclude Include="include\ECS\Entity.h" />
     <ClInclude Include="include\ECS\Transform.h" />
+    <ClInclude Include="include\EngineUtilities\GUI\GUI.h" />
     <ClInclude Include="include\EngineUtilities\Memory\TSharedPointer.h" />
     <ClInclude Include="include\EngineUtilities\Memory\TStaticPtr.h" />
     <ClInclude Include="include\EngineUtilities\Memory\TUniquePtr.h" />
     <ClInclude Include="include\EngineUtilities\Memory\TWeakPointer.h" />
+    <ClInclude Include="include\EngineUtilities\Utilities\Camera.h" />
+    <ClInclude Include="include\EngineUtilities\Utilities\EditorViewportPass.h" />
     <ClInclude Include="include\EngineUtilities\Utilities\EngineMath.h" />
+    <ClInclude Include="include\EngineUtilities\Utilities\LayoutBuilder.h" />
+    <ClInclude Include="include\EngineUtilities\Utilities\Skybox.h" />
     <ClInclude Include="include\EngineUtilities\Vectors\Vector2.h" />
     <ClInclude Include="include\EngineUtilities\Vectors\Vector3.h" />
     <ClInclude Include="include\EngineUtilities\Vectors\Vector4.h" />
@@ -466,9 +500,12 @@
     <ClInclude Include="include\MeshComponent.h" />
     <ClInclude Include="include\Model3D.h" />
     <ClInclude Include="include\Prerequisites.h" />
+    <ClInclude Include="include\RasterizerState.h" />
     <ClInclude Include="include\RenderTargetView.h" />
     <ClInclude Include="include\ResourceManager.h" />
     <ClInclude Include="include\SamplerState.h" />
+    <ClInclude Include="include\SceneGraph\HierarchyComponent.h" />
+    <ClInclude Include="include\SceneGraph\SceneGraph.h" />
     <ClInclude Include="include\ShaderProgram.h" />
     <ClInclude Include="include\stb_image.h" />
     <ClInclude Include="include\SwapChain.h" />

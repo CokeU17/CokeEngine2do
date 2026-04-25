@@ -203,37 +203,37 @@ Model3D::ProcessFBXMesh(FbxNode* node) {
 
       // Posición (espacio local)
       FbxVector4 P = mesh->GetControlPointAt(cpIndex);
-      out.Pos = { (float)P[0], (float)P[1], (float)P[2] };
+      out.Position = { (float)P[0], (float)P[1], (float)P[2] };
 
       // Normal por esquina
-      //FbxVector4 N(0, 1, 0, 0);
-      //mesh->GetPolygonVertexNormal(p, v, N);
-      //N.Normalize();
-      //out.Normal = { (float)N[0], (float)N[1], (float)N[2] };
+      FbxVector4 N(0, 1, 0, 0);
+      mesh->GetPolygonVertexNormal(p, v, N);
+      N.Normalize();
+      out.Normal = { (float)N[0], (float)N[1], (float)N[2] };
 
       // UV (invertir V para DX)
       if (uvElem && uvSetName) {
         int uvIdx = mesh->GetTextureUVIndex(p, v);
         FbxVector2 uv = (uvIdx >= 0) ? uvElem->GetDirectArray().GetAt(uvIdx)
           : readV2(uvElem, cpIndex, pvIndex);
-        out.Tex = { (float)uv[0], 1.0f - (float)uv[1] };
+        out.TextureCoordinate = { (float)uv[0], 1.0f - (float)uv[1] };
       }
       else {
-        out.Tex = { 0.0f, 0.0f };
+        out.TextureCoordinate = { 0.0f, 0.0f };
       }
 
       // Tangente / Bitangente si existen
-      //if (tanElem) {
-      //  FbxVector4 T = readV4(tanElem, cpIndex, pvIndex);
-      //  out.Tangent = { (float)T[0], (float)T[1], (float)T[2] };
-      //}
-      //else out.Tangent = { 0,0,0 };
-      //
-      //if (binElem) {
-      //  FbxVector4 B = readV4(binElem, cpIndex, pvIndex);
-      //  out.Bitangent = { (float)B[0], (float)B[1], (float)B[2] };
-      //}
-      //else out.Bitangent = { 0,0,0 };
+      if (tanElem) {
+        FbxVector4 T = readV4(tanElem, cpIndex, pvIndex);
+        out.Tangent = { (float)T[0], (float)T[1], (float)T[2] };
+      }
+      else out.Tangent = { 0,0,0 };
+      
+      if (binElem) {
+        FbxVector4 B = readV4(binElem, cpIndex, pvIndex);
+        out.Bitangent = { (float)B[0], (float)B[1], (float)B[2] };
+      }
+      else out.Bitangent = { 0,0,0 };
 
       cornerIdx.push_back((unsigned)vertices.size());
       vertices.push_back(out);
@@ -248,40 +248,40 @@ Model3D::ProcessFBXMesh(FbxNode* node) {
   }
 
   // --- Fallback: calcula T/B si faltan ---
-  //if (mesh->GetElementTangentCount() == 0 || mesh->GetElementBinormalCount() == 0)
-  //{
-  //  auto add = [](EU::Vector3 a, const EU::Vector3& b) { a.x += b.x; a.y += b.y; a.z += b.z; return a; };
-  //  auto sub = [](const EU::Vector3& a, const EU::Vector3& b) { return EU::Vector3(a.x - b.x, a.y - b.y, a.z - b.z); };
-  //  auto mul = [](const EU::Vector3& a, float s) { return EU::Vector3(a.x * s, a.y * s, a.z * s); };
-  //
-  //  for (size_t i = 0; i + 2 < indices.size(); i += 3)
-  //  {
-  //    Vertex& v0 = vertices[indices[i + 0]];
-  //    Vertex& v1 = vertices[indices[i + 1]];
-  //    Vertex& v2 = vertices[indices[i + 2]];
-  //
-  //    EU::Vector3 e1 = sub(v1.Position, v0.Position);
-  //    EU::Vector3 e2 = sub(v2.Position, v0.Position);
-  //
-  //    float du1 = v1.TextureCoordinate.x - v0.TextureCoordinate.x;
-  //    float dv1 = v1.TextureCoordinate.y - v0.TextureCoordinate.y;
-  //    float du2 = v2.TextureCoordinate.x - v0.TextureCoordinate.x;
-  //    float dv2 = v2.TextureCoordinate.y - v0.TextureCoordinate.y;
-  //
-  //    float denom = du1 * dv2 - du2 * dv1;
-  //    float r = (std::fabs(denom) < 1e-8f) ? 0.0f : 1.0f / denom;
-  //
-  //    EU::Vector3 T = mul(EU::Vector3(e1.x * dv2 - e2.x * dv1, e1.y * dv2 - e2.y * dv1, e1.z * dv2 - e2.z * dv1), r);
-  //    EU::Vector3 B = mul(EU::Vector3(e2.x * du1 - e1.x * du2, e2.y * du1 - e1.y * du2, e2.z * du1 - e1.z * du2), r);
-  //
-  //    v0.Tangent = add(v0.Tangent, T);
-  //    v1.Tangent = add(v1.Tangent, T);
-  //    v2.Tangent = add(v2.Tangent, T);
-  //    v0.Bitangent = add(v0.Bitangent, B);
-  //    v1.Bitangent = add(v1.Bitangent, B);
-  //    v2.Bitangent = add(v2.Bitangent, B);
-  //  }
-  //}
+  if (mesh->GetElementTangentCount() == 0 || mesh->GetElementBinormalCount() == 0)
+  {
+    auto add = [](EU::Vector3 a, const EU::Vector3& b) { a.x += b.x; a.y += b.y; a.z += b.z; return a; };
+    auto sub = [](const EU::Vector3& a, const EU::Vector3& b) { return EU::Vector3(a.x - b.x, a.y - b.y, a.z - b.z); };
+    auto mul = [](const EU::Vector3& a, float s) { return EU::Vector3(a.x * s, a.y * s, a.z * s); };
+  
+    for (size_t i = 0; i + 2 < indices.size(); i += 3)
+    {
+      SimpleVertex& v0 = vertices[indices[i + 0]];
+      SimpleVertex& v1 = vertices[indices[i + 1]];
+      SimpleVertex& v2 = vertices[indices[i + 2]];
+  
+      EU::Vector3 e1 = sub(v1.Position, v0.Position);
+      EU::Vector3 e2 = sub(v2.Position, v0.Position);
+  
+      float du1 = v1.TextureCoordinate.x - v0.TextureCoordinate.x;
+      float dv1 = v1.TextureCoordinate.y - v0.TextureCoordinate.y;
+      float du2 = v2.TextureCoordinate.x - v0.TextureCoordinate.x;
+      float dv2 = v2.TextureCoordinate.y - v0.TextureCoordinate.y;
+  
+      float denom = du1 * dv2 - du2 * dv1;
+      float r = (std::fabs(denom) < 1e-8f) ? 0.0f : 1.0f / denom;
+  
+      EU::Vector3 T = mul(EU::Vector3(e1.x * dv2 - e2.x * dv1, e1.y * dv2 - e2.y * dv1, e1.z * dv2 - e2.z * dv1), r);
+      EU::Vector3 B = mul(EU::Vector3(e2.x * du1 - e1.x * du2, e2.y * du1 - e1.y * du2, e2.z * du1 - e1.z * du2), r);
+  
+      v0.Tangent = add(v0.Tangent, T);
+      v1.Tangent = add(v1.Tangent, T);
+      v2.Tangent = add(v2.Tangent, T);
+      v0.Bitangent = add(v0.Bitangent, B);
+      v1.Bitangent = add(v1.Bitangent, B);
+      v2.Bitangent = add(v2.Bitangent, B);
+    }
+  }
 
   // --- Autodetecta espejo global del nodo y corrige de forma CONSISTENTE ---
   bool autoDetectMirror = true;
@@ -308,33 +308,33 @@ Model3D::ProcessFBXMesh(FbxNode* node) {
       std::swap(indices[i + 1], indices[i + 2]);
 
     // 2) Invierte TODAS las normales/tangentes/bitangentes (consistencia total)
-    //for (auto& v : vertices) {
-    //  v.Normal = { v.Normal.x,    v.Normal.y,    v.Normal.z };
-    //  v.Tangent = { v.Tangent.x,   v.Tangent.y,   v.Tangent.z };
-    //  v.Bitangent = { v.Bitangent.x, v.Bitangent.y, v.Bitangent.z };
-    //}
+    for (auto& v : vertices) {
+      v.Normal = { v.Normal.x,    v.Normal.y,    v.Normal.z };
+      v.Tangent = { v.Tangent.x,   v.Tangent.y,   v.Tangent.z };
+      v.Bitangent = { v.Bitangent.x, v.Bitangent.y, v.Bitangent.z };
+    }
   }
 
   // --- Ortonormaliza TBN por vértice ---
-  //auto dot3 = [](const EU::Vector3& a, const EU::Vector3& b) { return a.x * b.x + a.y * b.y + a.z * b.z; };
-  //auto norm3 = [](EU::Vector3& v) { float l = std::sqrt(EU::EMax(1e-20f, v.x * v.x + v.y * v.y + v.z * v.z)); v.x /= l; v.y /= l; v.z /= l; };
-  //auto sub3 = [](const EU::Vector3& a, const EU::Vector3& b) { return EU::Vector3(a.x - b.x, a.y - b.y, a.z - b.z); };
-  //auto cross3 = [](const EU::Vector3& a, const EU::Vector3& b) {
-  //  return EU::Vector3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-  //  };
-  //
-  //for (auto& v : vertices)
-  //{
-  //  norm3(v.Normal);
-  //  float dTN = dot3(v.Tangent, v.Normal);
-  //  v.Tangent = sub3(v.Tangent, EU::Vector3(v.Normal.x * dTN, v.Normal.y * dTN, v.Normal.z * dTN));
-  //  norm3(v.Tangent);
-  //
-  //  EU::Vector3 Bcalc = cross3(v.Normal, v.Tangent);
-  //  float hand = (dot3(Bcalc, v.Bitangent) < 0.0f) ? -1.0f : 1.0f;
-  //  v.Bitangent = { Bcalc.x * hand, Bcalc.y * hand, Bcalc.z * hand };
-  //  norm3(v.Bitangent);
-  //}
+  auto dot3 = [](const EU::Vector3& a, const EU::Vector3& b) { return a.x * b.x + a.y * b.y + a.z * b.z; };
+  auto norm3 = [](EU::Vector3& v) { float l = std::sqrt(EU::EMax(1e-20f, v.x * v.x + v.y * v.y + v.z * v.z)); v.x /= l; v.y /= l; v.z /= l; };
+  auto sub3 = [](const EU::Vector3& a, const EU::Vector3& b) { return EU::Vector3(a.x - b.x, a.y - b.y, a.z - b.z); };
+  auto cross3 = [](const EU::Vector3& a, const EU::Vector3& b) {
+    return EU::Vector3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+    };
+  
+  for (auto& v : vertices)
+  {
+    norm3(v.Normal);
+    float dTN = dot3(v.Tangent, v.Normal);
+    v.Tangent = sub3(v.Tangent, EU::Vector3(v.Normal.x * dTN, v.Normal.y * dTN, v.Normal.z * dTN));
+    norm3(v.Tangent);
+  
+    EU::Vector3 Bcalc = cross3(v.Normal, v.Tangent);
+    float hand = (dot3(Bcalc, v.Bitangent) < 0.0f) ? -1.0f : 1.0f;
+    v.Bitangent = { Bcalc.x * hand, Bcalc.y * hand, Bcalc.z * hand };
+    norm3(v.Bitangent);
+  }
 
   // --- Empaqueta ---
   MeshComponent mc;

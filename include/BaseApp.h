@@ -15,7 +15,11 @@
 #include "Model3D.h"
 #include "ECS/Actor.h"
 #include "EngineUtilities\GUI/GUI.h"
-
+#include "SceneGraph\SceneGraph.h"
+#include "EngineUtilities\Utilities\Camera.h"
+#include "EngineUtilities\Utilities\Skybox.h"
+#include "EngineUtilities\Utilities\LayoutBuilder.h"
+#include "EngineUtilities/Utilities/EditorViewportPass.h"
 extern IMGUI_IMPL_API
 LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -43,9 +47,14 @@ public:
 	void 
 	destroy();
 
+	void 
+	onResize(unsigned int newW, unsigned int newH);
+
+	void handleEditorViewportResize();
 private:
 	static LRESULT CALLBACK 
 	WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
 
 private:
 	Window                              m_window;
@@ -58,28 +67,44 @@ private:
 	DepthStencilView									  m_depthStencilView;
 	Viewport                            m_viewport;
 	ShaderProgram												m_shaderProgram;
-	//MeshComponent												m_mesh;
-	//Buffer															m_vertexBuffer;
-	//Buffer															m_indexBuffer;
-	Buffer															m_cbNeverChanges;
-	Buffer															m_cbChangeOnResize;
-	//Buffer															m_cbChangesEveryFrame;
-	Texture 														m_cyberGunAlbedo;
-	//SamplerState												m_samplerState;
+	//Buffer															m_cbNeverChanges;
+	//Buffer															m_cbChangeOnResize;
+	bool m_d3dReady = false;
+	Buffer m_constantBuffer;
+	CBMain m_constantBufferStruct;
 
-	//XMMATRIX                            m_World;
-	XMMATRIX                            m_View;
-	XMMATRIX                            m_Projection;
-	//XMFLOAT4                            m_vMeshColor;// (0.7f, 0.7f, 0.7f, 1.0f);
+	// Textures
+	Texture m_AlbedoSRV;
+	Texture m_MetallicSRV;
+	Texture m_RoughnessSRV;
+	Texture m_AOSRV;
+	Texture m_NormalSRV;
 
+	Camera															m_camera;
+
+	SceneGraph													m_sceneGraph;
 	std::vector<EU::TSharedPointer<Actor>> m_actors;
 	EU::TSharedPointer<Actor> m_cyberGun;
 
 	
 	Model3D*														m_model;
 
-	CBChangeOnResize										cbChangesOnResize;
-	CBNeverChanges											cbNeverChanges;
-	//CBChangesEveryFrame									cb;
+	//CBChangeOnResize										cbChangesOnResize;
+	//CBNeverChanges											cbNeverChanges;
 	GUI																m_gui;
+	EU::Vector3 m_cameraPos;
+
+	Skybox m_skybox;
+	Texture															m_skyboxTex;
+	RasterizerState m_defaultRasterizer;
+	DepthStencilState m_defaultDepthStencil;
+
+	EditorViewportPass m_editorViewportPass;
+	bool m_editorViewportResizePending = false;
+	unsigned int m_pendingViewportWidth = 1;
+	unsigned int m_pendingViewportHeight = 1;
+
+	unsigned int m_lastRequestedViewportWidth = 1;
+	unsigned int m_lastRequestedViewportHeight = 1;
+	int m_viewportResizeStableFrames = 0;
 };

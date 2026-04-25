@@ -9,6 +9,7 @@
 #include <memory>
 #include <unordered_map>
 #include <type_traits>
+#include <array>
 
 // Librerias DirectX
 #include <d3d11.h>
@@ -52,18 +53,47 @@
 //--------------------------------------------------------------------------------------
 struct SimpleVertex
 {
-  XMFLOAT3 Pos;
-  XMFLOAT2 Tex;
+  EU::Vector3 Position;
+  EU::Vector3 Normal;
+  EU::Vector3 Tangent;
+  EU::Vector3 Bitangent;
+  EU::Vector2 TextureCoordinate;
 };
+
+struct 
+SkyboxVertex {
+	float x,y,z;
+};
+
 
 struct CBNeverChanges
 {
   XMMATRIX mView;
 };
 
+struct CBSkybox
+{
+  XMMATRIX mviewProj;
+};
+
 struct CBChangeOnResize
 {
   XMMATRIX mProjection;
+};
+
+// Constant buffer used in the vertex and pixel shaders.  Align to
+// 16?bytes as required by Direct3D constant buffers.
+struct CBMain
+{
+  //XMFLOAT4X4 World;
+  XMFLOAT4X4 View;
+  XMFLOAT4X4 Projection;
+  EU::Vector3 CameraPos;
+  float pad0;
+  EU::Vector3 LightDir;
+  float pad1;
+  EU::Vector3 LightColor;
+  float pad2;
 };
 
 struct CBChangesEveryFrame
@@ -92,5 +122,7 @@ ComponentType {
   NONE = 0,     ///< Tipo de componente no especificado.
   TRANSFORM = 1,///< Componente de transformación.
   MESH = 2,     ///< Componente de malla.
-  MATERIAL = 3  ///< Componente de material.
+  MATERIAL = 3,  ///< Componente de material.
+	HIERARCHY = 4 ///< Componente de jerarquía.
 };
+

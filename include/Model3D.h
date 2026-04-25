@@ -19,6 +19,17 @@ public:
 		load(name);
 	}
 
+	Model3D(const std::string& name,
+		const SkyboxVertex vertices[],
+		const unsigned int indices[]) : IResource(name) {
+		MeshComponent mesh;
+		mesh.m_skyVertex.assign(vertices, vertices + 8); 
+		mesh.m_index.assign(indices, indices + 36); 
+		mesh.m_numIndex = mesh.m_index.size();
+		SetType(ResourceType::Model3D);
+		m_meshes.push_back(mesh);
+	}
+
 	~Model3D() = default;
 
 	bool 
