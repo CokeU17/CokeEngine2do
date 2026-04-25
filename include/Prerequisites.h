@@ -1,14 +1,16 @@
 #pragma once
-
-// Librerías estándar usadas en varias partes del motor
+// Librerias STD
 #include <string>
 #include <sstream>
 #include <vector>
 #include <windows.h>
 #include <xnamath.h>
 #include <thread>
+#include <memory>
+#include <unordered_map>
+#include <type_traits>
 
-// Librerías principales de DirectX 11
+// Librerias DirectX
 #include <d3d11.h>
 #include <d3dx11.h>
 #include <d3dcompiler.h>
@@ -16,83 +18,79 @@
 #include "resource.h"
 
 // Third Party Libraries
+#include "EngineUtilities/Vectors/Vector2.h"
+#include "EngineUtilities/Vectors/Vector3.h"
+#include "EngineUtilities\Memory\TSharedPointer.h"
+#include "EngineUtilities\Memory\TWeakPointer.h"
+#include "EngineUtilities\Memory\TStaticPtr.h"
+#include "EngineUtilities\Memory\TUniquePtr.h"
 
-//--------------------------------------------------------------------------------------
 // MACROS
-//--------------------------------------------------------------------------------------
+#define SAFE_RELEASE(x) if(x != nullptr) x->Release(); x = nullptr;
 
-// Libera recursos COM de forma segura y evita errores en if/else
-#define SAFE_RELEASE(x)        \
-do {                           \
-    if ((x) != nullptr) {      \
-        (x)->Release();        \
-        (x) = nullptr;         \
-    }                          \
-} while (0)
-
-// Mensaje simple para depuración al crear recursos
-#define MESSAGE(classObj, method, state)                                      \
-{                                                                             \
-    std::wostringstream os_;                                                  \
-    os_ << classObj << L"::" << method                                        \
-        << L" : " << L"[CREATION OF RESOURCE: " << state << L"]\n";           \
-    OutputDebugStringW(os_.str().c_str());                                    \
+#define MESSAGE( classObj, method, state )   \
+{                                            \
+   std::wostringstream os_;                  \
+   os_ << classObj << "::" << method << " : " << "[CREATION OF RESOURCE " << ": " << state << "] \n"; \
+   OutputDebugStringW( os_.str().c_str() );  \
 }
 
-// Mensaje de error para ver problemas en la ventana Output
-#define ERROR(classObj, method, errorMSG)                                     \
-{                                                                             \
-    try {                                                                     \
-        std::wostringstream os_;                                              \
-        os_ << L"ERROR : " << classObj << L"::" << method                     \
-            << L" : " << errorMSG << L"\n";                                   \
-        OutputDebugStringW(os_.str().c_str());                                \
-    } catch (...) {                                                           \
-        OutputDebugStringW(L"Failed to log error message.\n");                \
-    }                                                                         \
+#define ERROR(classObj, method, errorMSG)                     \
+{                                                             \
+    try {                                                     \
+        std::wostringstream os_;                              \
+        os_ << L"ERROR : " << classObj << L"::" << method     \
+            << L" : " << errorMSG << L"\n";                   \
+        OutputDebugStringW(os_.str().c_str());                \
+    } catch (...) {                                           \
+        OutputDebugStringW(L"Failed to log error message.\n");\
+    }                                                         \
 }
 
 //--------------------------------------------------------------------------------------
 // Structures
 //--------------------------------------------------------------------------------------
-
-// Vértice básico con posición y coordenadas de textura
 struct SimpleVertex
 {
-    XMFLOAT3 Pos;
-    XMFLOAT2 Tex;
+  XMFLOAT3 Pos;
+  XMFLOAT2 Tex;
 };
 
-// Constant buffer para datos que casi no cambian
 struct CBNeverChanges
 {
-    XMMATRIX mView;
+  XMMATRIX mView;
 };
 
-// Constant buffer para actualización por cambio de ventana
 struct CBChangeOnResize
 {
-    XMMATRIX mProjection;
+  XMMATRIX mProjection;
 };
 
-// Constant buffer para datos que cambian cada frame
 struct CBChangesEveryFrame
 {
-    XMMATRIX mWorld;
-    XMFLOAT4 vMeshColor;
+  XMMATRIX mWorld;
+  XMFLOAT4 vMeshColor;
 };
 
-// Tipos de extensión soportados para texturas
-enum ExtensionType
-{
-    DDS = 0,
-    PNG = 1,
-    JPG = 2
+enum ExtensionType {
+  DDS = 0,
+  PNG = 1,
+  JPG = 2
 };
 
-// Tipos de shader usados por el motor
-enum ShaderType
-{
-    VERTEX_SHADER = 0,
-    PIXEL_SHADER = 1
+enum ShaderType {
+  VERTEX_SHADER = 0,
+  PIXEL_SHADER = 1
+};
+
+/**
+ * @enum ComponentType
+ * @brief Tipos de componentes disponibles en el juego.
+ */
+enum 
+ComponentType {
+  NONE = 0,     ///< Tipo de componente no especificado.
+  TRANSFORM = 1,///< Componente de transformación.
+  MESH = 2,     ///< Componente de malla.
+  MATERIAL = 3  ///< Componente de material.
 };
