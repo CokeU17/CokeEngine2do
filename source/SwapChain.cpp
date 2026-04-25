@@ -163,8 +163,8 @@ SwapChain::present() {
 	}
 }
 
-HRESULT 
-SwapChain::resizeBuffers(unsigned int width, unsigned int height) {
+HRESULT SwapChain::resizeBuffers(UINT width, UINT height)
+{
   if (!m_swapChain) {
     ERROR("SwapChain", "resizeBuffers", "Swap chain is not initialized.");
     return E_POINTER;
@@ -196,6 +196,7 @@ HRESULT SwapChain::getBackBuffer(Texture& backBuffer)
   }
 
   // IMPORTANTE: backBuffer debe ser un ID3D11Texture2D* internamente
+  // (en tu init haces reinterpret_cast<void**>(&backBuffer)) :contentReference[oaicite:3]{index=3}
   HRESULT hr = m_swapChain->GetBuffer(
     0, __uuidof(ID3D11Texture2D),
     reinterpret_cast<void**>(&backBuffer)

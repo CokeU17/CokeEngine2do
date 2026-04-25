@@ -244,7 +244,7 @@ Texture::destroy() {
   if (m_texture != nullptr) {
     SAFE_RELEASE(m_texture);
   }
-  if (m_textureFromImg != nullptr) {
+  else if (m_textureFromImg != nullptr) {
     SAFE_RELEASE(m_textureFromImg);
   }
 }

@@ -94,7 +94,7 @@ public:
   present();
 
   HRESULT 
-  resizeBuffers(unsigned int width, unsigned int height);
+  resizeBuffers(UINT width, UINT height);
   
   HRESULT 
   getBackBuffer(Texture& backBuffer);

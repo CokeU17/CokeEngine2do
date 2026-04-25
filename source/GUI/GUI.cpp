@@ -52,8 +52,7 @@ GUI::update(Viewport& viewport, Window& window) {
 	//ImGuizmo::SetRect(0, 0, (float)window.m_width, (float)window.m_height);
 
 	// In Program always
-	drawStudioTopRibbon();
-	drawEditorDockspace();
+	ToolBar();
 	closeApp();
 	drawGizmoToolbar();
 }
@@ -422,22 +421,8 @@ GUI::outliner(const std::vector<EU::TSharedPointer<Actor>>& actors) {
 
 void GUI::editTransform(Camera& cam, Window& window, EU::TSharedPointer<Actor> actor)
 {
-	if (!actor) return;
-
-	static ImGuizmo::MODE mCurrentGizmoMode = ImGuizmo::WORLD;
+	static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
 	auto transform = actor->getComponent<Transform>();
-	if (!transform) return;
-
-	float rectX = m_viewportPos.x;
-	float rectY = m_viewportPos.y;
-	float rectW = m_viewportSize.x;
-	float rectH = m_viewportSize.y;
-
-	if (rectW < 64.0f || rectH < 64.0f)
-	{
-		m_isUsingGizmo = false;
-		return;
-	}
 
 	float* pos = const_cast<float*>(transform->getPosition().data());
 	float* rot = const_cast<float*>(transform->getRotation().data());
@@ -450,19 +435,31 @@ void GUI::editTransform(Camera& cam, Window& window, EU::TSharedPointer<Actor> a
 	ToFloatArray(cam.getView(), vArr);
 	ToFloatArray(cam.getProj(), pArr);
 
-	ImGuizmo::SetOrthographic(false);
-
-	// MUY IMPORTANTE: usar el drawlist del viewport, no el actual
-	if (m_viewportDrawList)
-		ImGuizmo::SetDrawlist(m_viewportDrawList);
-	else
-		ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
-
+	// --- Config gizmo ---
 	ImGuizmo::SetID(0);
 	ImGuizmo::SetGizmoSizeClipSpace(0.15f);
 	ImGuizmo::AllowAxisFlip(false);
+
+	// IMPORTANTE: dibujar encima de todo (aplicación, no ventana ImGui)
+	ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
+
+	// IMPORTANTE: rect = área real de render/backbuffer
+	// Si tu D3D11_VIEWPORT es el real, usa ese tamaño (recomendado).
+	// Si no lo tienes aquí, usa ImGuiIO.DisplaySize como fallback.
+	ImGuiIO& io = ImGui::GetIO();
+
+	float rectX = 0.0f;
+	float rectY = 0.0f;
+	float rectW = io.DisplaySize.x;
+	float rectH = io.DisplaySize.y;
+
+	// Si tienes DPI raro, prueba con framebuffer scale:
+	// rectW *= io.DisplayFramebufferScale.x;
+	// rectH *= io.DisplayFramebufferScale.y;
+
 	ImGuizmo::SetRect(rectX, rectY, rectW, rectH);
 
+	// --- Snap ---
 	float snapValue = 25.0f;
 	if (mCurrentGizmoOperation == ImGuizmo::ROTATE)    snapValue = 5.0f;
 	if (mCurrentGizmoOperation == ImGuizmo::TRANSLATE) snapValue = 0.5f;
@@ -470,24 +467,17 @@ void GUI::editTransform(Camera& cam, Window& window, EU::TSharedPointer<Actor> a
 	float snap[3] = { snapValue, snapValue, snapValue };
 	bool useSnap = ImGui::GetIO().KeyCtrl;
 
-	bool canManipulate = m_viewportHovered || m_viewportActive || m_isUsingGizmo;
+	// --- Manipulate ---
+	ImGuizmo::Manipulate(
+		vArr, pArr,
+		mCurrentGizmoOperation,
+		mCurrentGizmoMode,
+		mArr,
+		nullptr,
+		useSnap ? snap : nullptr
+	);
 
-	if (canManipulate)
-	{
-		ImGuizmo::Manipulate(
-			vArr,
-			pArr,
-			mCurrentGizmoOperation,
-			mCurrentGizmoMode,
-			mArr,
-			nullptr,
-			useSnap ? snap : nullptr
-		);
-	}
-
-	m_isUsingGizmo = ImGuizmo::IsUsing();
-
-	if (m_isUsingGizmo)
+	if (ImGuizmo::IsUsing())
 	{
 		float newPos[3], newRot[3], newSca[3];
 		ImGuizmo::DecomposeMatrixToComponents(mArr, newPos, newRot, newSca);
@@ -495,17 +485,29 @@ void GUI::editTransform(Camera& cam, Window& window, EU::TSharedPointer<Actor> a
 		transform->setPosition(EU::Vector3(newPos[0], newPos[1], newPos[2]));
 		transform->setRotation(EU::Vector3(newRot[0], newRot[1], newRot[2]));
 		transform->setScale(EU::Vector3(newSca[0], newSca[1], newSca[2]));
+
+		XMMATRIX matScale = XMMatrixScaling(newSca[0], newSca[1], newSca[2]);
+		XMMATRIX matRot = XMMatrixRotationRollPitchYaw(
+			XMConvertToRadians(newRot[0]),
+			XMConvertToRadians(newRot[1]),
+			XMConvertToRadians(newRot[2])
+		);
+		XMMATRIX matTrans = XMMatrixTranslation(newPos[0], newPos[1], newPos[2]);
+
+		transform->matrix = matScale * matRot * matTrans;
 	}
-}void GUI::drawGizmoToolbar()
+}
+
+void GUI::drawGizmoToolbar()
 {
-	//ImGui::SetNextWindowPos(ImVec2(300, 150), ImGuiCond_Always);
+	ImGui::SetNextWindowPos(ImVec2(10, 25), ImGuiCond_Always);
 	ImGui::SetNextWindowBgAlpha(0.0f); // 0 = transparente total
 
 	ImGuiWindowFlags window_flags =
 		ImGuiWindowFlags_NoDecoration |
-		ImGuiWindowFlags_AlwaysAutoResize |/*
+		ImGuiWindowFlags_AlwaysAutoResize |
 		ImGuiWindowFlags_NoMove |
-		ImGuiWindowFlags_NoSavedSettings |*/
+		ImGuiWindowFlags_NoSavedSettings |
 		ImGuiWindowFlags_NoFocusOnAppearing |
 		ImGuiWindowFlags_NoNav;
 
@@ -540,361 +542,4 @@ void GUI::editTransform(Camera& cam, Window& window, EU::TSharedPointer<Actor> a
 	ImGui::End();
 
 	ImGui::PopStyleVar();
-}
-
-void GUI::drawStudioTopRibbon()
-{
-	// =========================================================
-	// CONFIGURACION GENERAL DE LA BARRA SUPERIOR TIPO STUDIO
-	// =========================================================
-	ImGuiViewport* viewport = ImGui::GetMainViewport();
-
-	const float menuBarHeight = 24.0f;
-	const float ribbonHeight = 72.0f;
-	const float totalHeight = menuBarHeight + ribbonHeight;
-
-	// -----------------------------
-	// 1) MENU SUPERIOR
-	// -----------------------------
-	ImGui::SetNextWindowPos(viewport->Pos, ImGuiCond_Always);
-	ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, menuBarHeight), ImGuiCond_Always);
-
-	ImGuiWindowFlags menuFlags =
-		ImGuiWindowFlags_NoDecoration |
-		ImGuiWindowFlags_NoMove |
-		ImGuiWindowFlags_NoSavedSettings |
-		ImGuiWindowFlags_NoScrollWithMouse |
-		ImGuiWindowFlags_NoScrollbar |
-		ImGuiWindowFlags_MenuBar;
-
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 4.0f));
-	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.10f, 0.11f, 0.14f, 1.0f));
-
-	if (ImGui::Begin("##StudioMenuBar", nullptr, menuFlags))
-	{
-		if (ImGui::BeginMenuBar())
-		{
-			if (ImGui::BeginMenu("File"))
-			{
-				ImGui::MenuItem("New Place");
-				ImGui::MenuItem("Open Place");
-				ImGui::MenuItem("Save");
-				ImGui::Separator();
-				if (ImGui::MenuItem("Exit"))
-				{
-					show_exit_popup = true;
-				}
-				ImGui::EndMenu();
-			}
-
-			if (ImGui::BeginMenu("Edit"))
-			{
-				ImGui::MenuItem("Undo");
-				ImGui::MenuItem("Redo");
-				ImGui::Separator();
-				ImGui::MenuItem("Cut");
-				ImGui::MenuItem("Copy");
-				ImGui::MenuItem("Paste");
-				ImGui::EndMenu();
-			}
-
-			if (ImGui::BeginMenu("View"))
-			{
-				ImGui::MenuItem("Explorer");
-				ImGui::MenuItem("Properties");
-				ImGui::MenuItem("Toolbox");
-				ImGui::EndMenu();
-			}
-
-			if (ImGui::BeginMenu("Plugins"))
-			{
-				ImGui::MenuItem("Manage Plugins");
-				ImGui::MenuItem("Plugin Folder");
-				ImGui::EndMenu();
-			}
-
-			if (ImGui::BeginMenu("Test"))
-			{
-				ImGui::MenuItem("Play");
-				ImGui::MenuItem("Pause");
-				ImGui::MenuItem("Stop");
-				ImGui::EndMenu();
-			}
-
-			if (ImGui::BeginMenu("Window"))
-			{
-				ImGui::MenuItem("Reset Layout");
-				ImGui::EndMenu();
-			}
-
-			if (ImGui::BeginMenu("Help"))
-			{
-				ImGui::MenuItem("Documentation");
-				ImGui::MenuItem("About");
-				ImGui::EndMenu();
-			}
-
-			ImGui::EndMenuBar();
-		}
-	}
-	ImGui::End();
-
-	ImGui::PopStyleColor();
-	ImGui::PopStyleVar(2);
-
-	// -----------------------------
-	// 2) RIBBON PRINCIPAL
-	// -----------------------------
-	ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + menuBarHeight), ImGuiCond_Always);
-	ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, ribbonHeight), ImGuiCond_Always);
-
-	ImGuiWindowFlags ribbonFlags =
-		ImGuiWindowFlags_NoDecoration |
-		ImGuiWindowFlags_NoMove |
-		ImGuiWindowFlags_NoSavedSettings |
-		ImGuiWindowFlags_NoScrollWithMouse |
-		ImGuiWindowFlags_NoScrollbar;
-
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 10.0f));
-	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
-	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.08f, 0.09f, 0.12f, 1.0f));
-	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.14f, 0.15f, 0.19f, 1.0f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.22f, 0.28f, 1.0f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.24f, 0.26f, 0.34f, 1.0f));
-
-	if (ImGui::Begin("##StudioRibbon", nullptr, ribbonFlags))
-	{
-		auto ribbonButton = [&](const char* id, const char* topText, const char* bottomText, ImVec2 size, bool active = false) -> bool
-			{
-				if (active)
-					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.24f, 0.34f, 0.58f, 1.0f));
-
-				bool pressed = ImGui::Button(id, size);
-
-				ImVec2 min = ImGui::GetItemRectMin();
-				ImVec2 max = ImGui::GetItemRectMax();
-
-				// Texto centrado manualmente dentro del boton
-				ImDrawList* drawList = ImGui::GetWindowDrawList();
-
-				ImVec2 topSize = ImGui::CalcTextSize(topText);
-				ImVec2 bottomSize = ImGui::CalcTextSize(bottomText);
-
-				float centerX = (min.x + max.x) * 0.5f;
-
-				drawList->AddText(
-					ImVec2(centerX - topSize.x * 0.5f, min.y + 10.0f),
-					ImGui::GetColorU32(ImGuiCol_Text),
-					topText
-				);
-
-				drawList->AddText(
-					ImVec2(centerX - bottomSize.x * 0.5f, min.y + 34.0f),
-					ImGui::GetColorU32(ImGuiCol_TextDisabled),
-					bottomText
-				);
-
-				if (active)
-					ImGui::PopStyleColor();
-
-				return pressed;
-			};
-
-		auto separatorGroup = [&]()
-			{
-				ImGui::SameLine();
-				ImGui::Dummy(ImVec2(6.0f, 1.0f));
-				ImGui::SameLine();
-
-				ImVec2 p = ImGui::GetCursorScreenPos();
-				ImDrawList* draw = ImGui::GetWindowDrawList();
-				draw->AddLine(
-					ImVec2(p.x, p.y),
-					ImVec2(p.x, p.y + 48.0f),
-					IM_COL32(80, 80, 90, 255),
-					1.0f
-				);
-
-				ImGui::Dummy(ImVec2(8.0f, 48.0f));
-				ImGui::SameLine();
-			};
-
-		const ImVec2 btnSize(72.0f, 52.0f);
-
-		// Herramientas de transformacion
-		if (ribbonButton("##Select", "Select", "Cursor", btnSize, false))
-		{
-			// modo seleccion
-		}
-		ImGui::SameLine();
-
-		if (ribbonButton("##Move", "Move", "W", btnSize, mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
-		{
-			mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
-		}
-		ImGui::SameLine();
-
-		if (ribbonButton("##Scale", "Scale", "R", btnSize, mCurrentGizmoOperation == ImGuizmo::SCALE))
-		{
-			mCurrentGizmoOperation = ImGuizmo::SCALE;
-		}
-		ImGui::SameLine();
-
-		if (ribbonButton("##Rotate", "Rotate", "E", btnSize, mCurrentGizmoOperation == ImGuizmo::ROTATE))
-		{
-			mCurrentGizmoOperation = ImGuizmo::ROTATE;
-		}
-		ImGui::SameLine();
-
-		if (ribbonButton("##Transform", "Transform", "Tool", btnSize, false))
-		{
-			// herramienta extra
-		}
-
-		separatorGroup();
-
-		// Creacion / escena
-		if (ribbonButton("##Part", "Part", "Mesh", btnSize, false))
-		{
-			// crear parte
-		}
-		ImGui::SameLine();
-
-		if (ribbonButton("##Terrain", "Terrain", "Edit", btnSize, false))
-		{
-			// abrir terrain tools
-		}
-		ImGui::SameLine();
-
-		if (ribbonButton("##Material", "Material", "Editor", btnSize, false))
-		{
-			// material editor
-		}
-		ImGui::SameLine();
-
-		if (ribbonButton("##Color", "Color", "Picker", btnSize, false))
-		{
-			// color picker
-		}
-
-		separatorGroup();
-
-		// Ventanas / paneles
-		if (ribbonButton("##Explorer", "Explorer", "Panel", btnSize, false))
-		{
-			// toggle explorer
-		}
-		ImGui::SameLine();
-
-		if (ribbonButton("##Properties", "Properties", "Panel", btnSize, false))
-		{
-			// toggle properties
-		}
-		ImGui::SameLine();
-
-		if (ribbonButton("##Toolbox", "Toolbox", "Assets", btnSize, false))
-		{
-			// toggle toolbox
-		}
-	}
-	ImGui::End();
-
-	ImGui::PopStyleColor(4);
-	ImGui::PopStyleVar(3);
-}
-
-void GUI::drawViewportPanel(ID3D11ShaderResourceView* viewportSRV)
-{
-	ImGuiWindowFlags flags =
-		ImGuiWindowFlags_NoScrollbar |
-		ImGuiWindowFlags_NoScrollWithMouse | 
-
-		ImGuiWindowFlags_NoCollapse;
-
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-	if (ImGui::Begin("Viewport", nullptr, flags))
-	{
-		m_viewportDrawList = ImGui::GetWindowDrawList();
-
-		ImVec2 panelMin = ImGui::GetCursorScreenPos();
-		ImVec2 panelSize = ImGui::GetContentRegionAvail();
-
-		if (panelSize.x < 1.0f) panelSize.x = 1.0f;
-		if (panelSize.y < 1.0f) panelSize.y = 1.0f;
-
-		m_viewportPos = panelMin;
-		m_viewportSize = panelSize;
-
-		if (viewportSRV)
-		{
-			ImGui::Image((ImTextureID)viewportSRV, panelSize);
-		}
-		else
-		{
-			ImDrawList* drawList = ImGui::GetWindowDrawList();
-			ImVec2 panelMax(panelMin.x + panelSize.x, panelMin.y + panelSize.y);
-
-			drawList->AddRectFilled(panelMin, panelMax, IM_COL32(20, 20, 25, 255));
-			drawList->AddText(
-				ImVec2(panelMin.x + 12.0f, panelMin.y + 12.0f),
-				IM_COL32(220, 220, 220, 255),
-				"Viewport sin textura"
-			);
-		}
-
-		// IMPORTANTE: el hover/active del item imagen
-		m_viewportHovered = ImGui::IsItemHovered();
-		m_viewportActive = ImGui::IsItemActive();
-		m_viewportFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
-	}
-	ImGui::End();
-
-	ImGui::PopStyleVar();
-}
-
-void GUI::drawEditorDockspace()
-{
-	ImGuiViewport* mainViewport = ImGui::GetMainViewport();
-
-	// Debe coincidir con la altura total que ocupa tu ribbon superior
-	const float topOffset = 96.0f; // 24 menu + 72 ribbon
-
-	ImVec2 dockPos = ImVec2(mainViewport->Pos.x, mainViewport->Pos.y + topOffset);
-	ImVec2 dockSize = ImVec2(mainViewport->Size.x, mainViewport->Size.y - topOffset);
-
-	ImGuiWindowFlags window_flags =
-		ImGuiWindowFlags_NoTitleBar |
-		ImGuiWindowFlags_NoCollapse |
-		ImGuiWindowFlags_NoResize |
-		ImGuiWindowFlags_NoMove |
-		ImGuiWindowFlags_NoBringToFrontOnFocus |
-		ImGuiWindowFlags_NoNavFocus |
-		ImGuiWindowFlags_NoBackground |
-		ImGuiWindowFlags_NoDecoration |
-		ImGuiWindowFlags_NoSavedSettings |
-		ImGuiWindowFlags_MenuBar;
-
-	ImGui::SetNextWindowPos(dockPos, ImGuiCond_Always);
-	ImGui::SetNextWindowSize(dockSize, ImGuiCond_Always);
-	ImGui::SetNextWindowViewport(mainViewport->ID);
-
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-	ImGui::Begin("##MainEditorDockspace", nullptr, window_flags);
-
-	ImGuiID dockspace_id = ImGui::GetID("##EditorDockspace");
-	ImGuiDockNodeFlags dockspace_flags =
-		ImGuiDockNodeFlags_None |
-		ImGuiDockNodeFlags_PassthruCentralNode;
-
-	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
-
-	ImGui::End();
-
-	ImGui::PopStyleVar(3);
 }

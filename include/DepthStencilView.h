@@ -45,12 +45,6 @@ public:
   HRESULT 
   init(Device& device, Texture& depthStencil, DXGI_FORMAT format);
 
-  HRESULT 
-  init(Device& device,
-       Texture& depthStencil,
-       DXGI_FORMAT format,
-       D3D11_DSV_DIMENSION viewDimension);
-
   /**
    * @brief Actualiza parámetros internos si se requieren cambios en el estado.
    *
