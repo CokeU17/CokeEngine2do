@@ -143,6 +143,9 @@
     <ClCompile Include="source\DepthStencilState.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\EditorViewportPass.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="WildvineEngine.fx">
@@ -301,6 +304,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\EngineUtilities\Utilities\LayoutBuilder.h">
+      <Filter>include\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="include\EngineUtilities\Utilities\EditorViewportPass.h">
       <Filter>include\Utilities</Filter>
     </ClInclude>
   </ItemGroup>

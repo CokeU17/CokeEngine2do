@@ -19,7 +19,7 @@
 #include "EngineUtilities\Utilities\Camera.h"
 #include "EngineUtilities\Utilities\Skybox.h"
 #include "EngineUtilities\Utilities\LayoutBuilder.h"
-
+#include "EngineUtilities/Utilities/EditorViewportPass.h"
 extern IMGUI_IMPL_API
 LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -48,7 +48,9 @@ public:
 	destroy();
 
 	void 
-	onResize(UINT newW, UINT newH);
+	onResize(unsigned int newW, unsigned int newH);
+
+	void handleEditorViewportResize();
 private:
 	static LRESULT CALLBACK 
 	WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -96,4 +98,13 @@ private:
 	Texture															m_skyboxTex;
 	RasterizerState m_defaultRasterizer;
 	DepthStencilState m_defaultDepthStencil;
+
+	EditorViewportPass m_editorViewportPass;
+	bool m_editorViewportResizePending = false;
+	unsigned int m_pendingViewportWidth = 1;
+	unsigned int m_pendingViewportHeight = 1;
+
+	unsigned int m_lastRequestedViewportWidth = 1;
+	unsigned int m_lastRequestedViewportHeight = 1;
+	int m_viewportResizeStableFrames = 0;
 };

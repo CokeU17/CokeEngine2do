@@ -16,7 +16,7 @@ BaseApp::awake() {
 int
 BaseApp::run(HINSTANCE hInst, int nCmdShow) {
 	// 1) Initialize Window
-	if (FAILED(m_window.init(hInst, nCmdShow, WndProc,this))) {
+	if (FAILED(m_window.init(hInst, nCmdShow, WndProc, this))) {
 		ERROR("Main", "Run", "Failed to initialize window.");
 		return 0;
 	}
@@ -105,7 +105,6 @@ BaseApp::init() {
 			("Failed to initialize DepthStencilView. HRESULT: " + std::to_string(hr)).c_str());
 		return hr;
 	}
-	m_d3dReady = true;
 
 	// Crear el m_viewport
 	hr = m_viewport.init(m_window);
@@ -115,6 +114,7 @@ BaseApp::init() {
 			("Failed to initialize Viewport. HRESULT: " + std::to_string(hr)).c_str());
 		return hr;
 	}
+	m_d3dReady = true;
 
 	// Load Resources -> Modelos, Texturas e Interfaz de usuario
 	std::array<std::string, 6> faces = {
@@ -239,11 +239,18 @@ BaseApp::init() {
 		return hr;
 	}
 
+	hr = m_editorViewportPass.init(m_device, 1280, 720);
+	if (FAILED(hr)) {
+		ERROR("Main", "InitDevice",
+			("Failed to initialize EditorViewportPass. HRESULT: " + std::to_string(hr)).c_str());
+		return hr;
+	}
+
 	return S_OK;
 }
 
-void BaseApp::update(float deltaTime)
-{
+void 
+BaseApp::update(float deltaTime) {
 	// Update our time
 	static float t = 0.0f;
 	if (m_swapChain.m_driverType == D3D_DRIVER_TYPE_REFERENCE)
@@ -262,8 +269,45 @@ void BaseApp::update(float deltaTime)
 	m_gui.update(m_viewport, m_window);
 	bool show_demo_window = true;
 	//ImGui::ShowDemoWindow(&show_demo_window);
+	m_gui.drawViewportPanel(m_editorViewportPass.getSRV());
 	m_gui.inspectorGeneral(m_actors[m_gui.selectedActorIndex]);
 	m_gui.outliner(m_actors);
+	m_gui.editTransform(m_camera, m_window, m_actors[m_gui.selectedActorIndex]);
+
+	unsigned int desiredW = static_cast<unsigned int>(m_gui.m_viewportSize.x);
+	unsigned int desiredH = static_cast<unsigned int>(m_gui.m_viewportSize.y);
+
+	const unsigned int kMinViewportSize = 64;
+
+	if (desiredW < kMinViewportSize) desiredW = kMinViewportSize;
+	if (desiredH < kMinViewportSize) desiredH = kMinViewportSize;
+
+	// Si cambió el tamaño solicitado, reinicia estabilidad
+	if (desiredW != m_lastRequestedViewportWidth || desiredH != m_lastRequestedViewportHeight)
+	{
+		m_lastRequestedViewportWidth = desiredW;
+		m_lastRequestedViewportHeight = desiredH;
+		m_viewportResizeStableFrames = 0;
+	}
+	else
+	{
+		// El tamaño ya no cambió este frame
+		m_viewportResizeStableFrames++;
+	}
+
+	// Solo marcar resize cuando el tamaño se haya mantenido estable
+	const int kStableFramesRequired = 2;
+
+	if (m_viewportResizeStableFrames >= kStableFramesRequired)
+	{
+		if (desiredW != m_editorViewportPass.getWidth() ||
+			desiredH != m_editorViewportPass.getHeight())
+		{
+			m_editorViewportResizePending = true;
+			m_pendingViewportWidth = desiredW;
+			m_pendingViewportHeight = desiredH;
+		}
+	}
 
 	// Actualizar la matriz de proyección y vista
 	m_camera.updateViewMatrix();
@@ -285,16 +329,17 @@ void BaseApp::update(float deltaTime)
 	// Update Actors
 	m_sceneGraph.update(deltaTime, m_deviceContext);
 
-	m_gui.editTransform(m_camera, m_window, m_actors[m_gui.selectedActorIndex]);
 }
 
 void 
 BaseApp::render() {
-	float ClearColor[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
-	m_renderTargetView.render(m_deviceContext, m_depthStencilView, 1, ClearColor);
+	handleEditorViewportResize();
 
-	m_viewport.render(m_deviceContext);
-	m_depthStencilView.render(m_deviceContext);
+	float ClearColor[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
+	const float viewportClear[4] = { 0.10f, 0.10f, 0.10f, 1.0f };
+	m_editorViewportPass.begin(m_deviceContext, viewportClear);
+	m_editorViewportPass.setViewport(m_deviceContext);
+	m_editorViewportPass.clearDepth(m_deviceContext);
 
 	// 1) SKYBOX PASS
 	m_skybox.render(m_deviceContext);
@@ -317,6 +362,11 @@ BaseApp::render() {
 	// 3) SCENE PASS
 	m_sceneGraph.render(m_deviceContext);
 
+	// 2) Volver al backbuffer principal
+	m_renderTargetView.render(m_deviceContext, m_depthStencilView, 1, ClearColor);
+	m_viewport.render(m_deviceContext);
+	m_depthStencilView.render(m_deviceContext);
+
 	// 4) GUI
 	m_gui.render();
 
@@ -327,6 +377,7 @@ void
 BaseApp::destroy() {
 	if (m_deviceContext.m_deviceContext) m_deviceContext.m_deviceContext->ClearState();
 	m_sceneGraph.destroy();
+	m_editorViewportPass.destroy();
 	m_AlbedoSRV.destroy();
 	m_MetallicSRV.destroy();
 	m_NormalSRV.destroy();
@@ -370,14 +421,13 @@ BaseApp::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 		// Evita recrear cuando está minimizada
 		if (wParam == SIZE_MINIMIZED) return 0;
 
-		UINT newW = LOWORD(lParam);
-		UINT newH = HIWORD(lParam);
+		unsigned int newW = LOWORD(lParam);
+		unsigned int newH = HIWORD(lParam);
 		if (newW == 0 || newH == 0) return 0;
 
 		// Recupera tu instancia BaseApp (lo más común es guardarla en GWLP_USERDATA en WM_CREATE)
 		BaseApp* app = reinterpret_cast<BaseApp*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 		if (app) app->onResize(newW, newH);
-
 		return 0;
 	}
 	case WM_DESTROY:
@@ -387,7 +437,7 @@ BaseApp::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
-void BaseApp::onResize(UINT newW, UINT newH)
+void BaseApp::onResize(unsigned int newW, unsigned int newH)
 {
 	// 1) Actualiza window size (tu init lo calcula con GetClientRect solo una vez) :contentReference[oaicite:6]{index=6}
 	if (!m_d3dReady) {
@@ -424,7 +474,7 @@ void BaseApp::onResize(UINT newW, UINT newH)
 	hr = m_renderTargetView.init(m_device, m_backBuffer, DXGI_FORMAT_R8G8B8A8_UNORM);
 	if (FAILED(hr)) return;
 
-	// 7) Re-crea Depth/DSV (tu init actual lo hace con m_window.m_width/m_height) :contentReference[oaicite:7]{index=7}
+	// 7) Re-crea Depth/DSV (tu init actual lo hace con m_window.m_width/m_height)
 	hr = m_depthStencil.init(m_device, newW, newH, DXGI_FORMAT_D24_UNORM_S8_UINT, D3D11_BIND_DEPTH_STENCIL, 4, 0);
 	if (FAILED(hr)) return;
 
@@ -434,6 +484,37 @@ void BaseApp::onResize(UINT newW, UINT newH)
 	// 8) Viewport
 	m_viewport.init(m_window);
 
-	// 9) Cámara (aspect ratio) (tu cámara lo calcula a partir de m_window) :contentReference[oaicite:8]{index=8}
+	// 9) Cámara (aspect ratio) (tu cámara lo calcula a partir de m_window) 
 	m_camera.setLens(XM_PIDIV4, newW / (float)newH, 0.01f, 100.0f);
+}
+
+void BaseApp::handleEditorViewportResize()
+{
+	if (!m_editorViewportResizePending)
+		return;
+
+	// Desbindear antes de tocar recursos
+	m_deviceContext.m_deviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+
+	ID3D11ShaderResourceView* nullSRVs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = {};
+	m_deviceContext.m_deviceContext->PSSetShaderResources(
+		0,
+		D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT,
+		nullSRVs
+	);
+
+	// Crear pass temporal nuevo
+	EditorViewportPass newPass;
+	HRESULT hr = newPass.init(m_device, m_pendingViewportWidth, m_pendingViewportHeight);
+	if (FAILED(hr))
+	{
+		// Si falla, conserva el pass actual
+		m_editorViewportResizePending = false;
+		return;
+	}
+
+	// Intercambio seguro: el pass viejo queda en newPass y se destruye al salir
+	m_editorViewportPass.swap(newPass);
+
+	m_editorViewportResizePending = false;
 }
